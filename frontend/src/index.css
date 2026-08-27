@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-parchment text-ink font-sans antialiased;
+  }
+  h1, h2, h3 {
+    @apply font-display;
+  }
+  :focus-visible {
+    outline: 2px solid #1E7A34;
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium;
+  }
+  .badge-published {
+    @apply bg-forest-100 text-forest-800;
+  }
+  .record-number {
+    @apply font-mono text-xs tracking-wide text-forest-700 bg-forest-50 px-2 py-0.5 rounded;
+  }
+  .card {
+    @apply bg-white rounded-2xl shadow-card border border-forest-100/70;
+  }
+  .btn-primary {
+    @apply inline-flex items-center gap-2 rounded-lg bg-forest-600 px-4 py-2 text-sm font-medium text-white hover:bg-forest-700 transition-colors;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 rounded-lg border border-forest-200 bg-white px-4 py-2 text-sm font-medium text-forest-700 hover:bg-forest-50 transition-colors;
+  }
+  .input {
+    @apply w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-ink placeholder:text-gray-400 focus:border-forest-400 focus:ring-1 focus:ring-forest-400 outline-none;
+  }
+}
