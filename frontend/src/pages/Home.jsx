@@ -1,82 +1,80 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Lightbulb, CalendarClock, Megaphone, ScrollText, Gavel, BookOpen, ArrowRight } from "lucide-react";
+import { ScrollText, Gavel, ArrowRight, Landmark, Newspaper, Pin } from "lucide-react";
 import { api } from "../api/client";
 import Loading from "../components/Loading";
 import { EmptyState, ErrorState } from "../components/EmptyState";
 
-function formatEventDate(ev) {
-  if (!ev.event_date) return "";
-  const date = new Date(`${ev.event_date}T00:00:00`);
-  const label = date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-  return ev.event_time ? `${label} · ${ev.event_time.slice(0, 5)}` : label;
-}
+const FEATURES = [
+  {
+    icon: ScrollText,
+    title: "Published Ordinances",
+    description: "Browse enacted municipal laws, searchable by year, category, and author.",
+  },
+  {
+    icon: Gavel,
+    title: "Resolutions & Minutes",
+    description: "Access official resolutions and session minutes from every council meeting.",
+  },
+  {
+    icon: Landmark,
+    title: "Know Your Council",
+    description: "See current and past councilors, their positions, and the records they've authored.",
+  },
+];
 
 function formatPostDate(iso) {
   if (!iso) return "";
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
-function Avatar({ author }) {
-  if (author?.photo) {
-    return <img src={author.photo} alt="" className="h-6 w-6 flex-shrink-0 rounded-full object-cover" />;
-  }
-  const initial = author?.name?.trim()?.[0]?.toUpperCase() || "?";
-  return (
-    <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-forest-100 text-[11px] font-semibold text-forest-700">
-      {initial}
-    </span>
-  );
-}
+const CATEGORY_STYLE = {
+  announcement: "bg-harbor-100 text-harbor-700",
+  activity: "bg-forest-100 text-forest-700",
+};
 
-// Shared feed card for a content_posts row (used by both Announcements and
-// Activities — same underlying table/shape, just filtered by category).
-function ContentPostItem({ post }) {
-  const images = post.images || [];
-  const [cover, ...rest] = images;
-  const extra = rest.slice(0, 3);
-  const overflow = images.length - 1 - extra.length;
+// A single content_posts card for the "Featured Feed" bento grid — a full
+// clickable tile (image + gradient + overlaid text) rather than the plain
+// list-row card style used elsewhere, to match the bento layout's density.
+function FeaturedCard({ post, large = false }) {
+  const cover = post.images?.[0];
 
   return (
-    <article className="card card-interactive overflow-hidden">
-      {cover && (
-        <div className="relative aspect-[16/9] w-full overflow-hidden bg-forest-50">
-          <img src={cover.url} alt="" className="h-full w-full object-cover" loading="lazy" />
-          {post.pinned && (
-            <span className="absolute left-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
-              Pinned
-            </span>
-          )}
+    <Link
+      to="/feed"
+      className={`group relative block h-full min-h-[170px] overflow-hidden rounded-2xl bg-forest-800 ${
+        large ? "min-h-[280px]" : ""
+      }`}
+    >
+      {cover ? (
+        <img
+          src={cover.url}
+          alt=""
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center text-forest-500">
+          <Newspaper className={large ? "h-14 w-14" : "h-8 w-8"} />
         </div>
       )}
-      <div className="p-5">
-        <div className="flex items-center gap-2">
-          {!cover && post.pinned && <span className="badge bg-amber-50 text-amber-700">Pinned</span>}
-          <h3 className="font-semibold text-ink">{post.title}</h3>
-        </div>
-        <div className="mt-2 flex items-center gap-2 text-xs text-muted">
-          <Avatar author={post.author} />
-          {post.author?.name && <span>{post.author.name}</span>}
-          {post.author?.name && post.created_at && <span aria-hidden="true">·</span>}
-          <span>{formatPostDate(post.created_at)}</span>
-        </div>
-        <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm leading-relaxed text-muted">{post.body}</p>
-        {extra.length > 0 && (
-          <div className="mt-3 flex gap-2">
-            {extra.map((img, i) => (
-              <div key={img.path || i} className="relative h-14 w-14 overflow-hidden rounded-lg border border-forest-100">
-                <img src={img.url} alt="" className="h-full w-full object-cover" loading="lazy" />
-                {i === extra.length - 1 && overflow > 0 && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-xs font-medium text-white">
-                    +{overflow}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+
+      <span className={`badge absolute left-3 top-3 capitalize ${CATEGORY_STYLE[post.category] || CATEGORY_STYLE.activity}`}>
+        {post.category}
+      </span>
+      {post.pinned && (
+        <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-black/55 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
+          <Pin className="h-3 w-3" /> Pinned
+        </span>
+      )}
+
+      <div className="absolute inset-x-0 bottom-0 p-4">
+        <p className="text-xs text-white/70">{formatPostDate(post.created_at)}</p>
+        <h3 className={`mt-1 font-display font-semibold text-white ${large ? "text-xl" : "text-sm"}`}>{post.title}</h3>
+        {large && post.body && <p className="mt-2 line-clamp-2 text-sm text-white/80">{post.body}</p>}
       </div>
-    </article>
+    </Link>
   );
 }
 
@@ -87,21 +85,17 @@ export default function Home() {
     let cancelled = false;
     async function load() {
       try {
-        const [announcements, activities, trivia, schedules] = await Promise.all([
-          api.home.announcements(),
-          api.home.activities(),
-          api.home.trivia(),
-          api.home.schedules(),
+        const [feed, stats] = await Promise.all([
+          api.home.feed({ page: 1, pageSize: 4, sort: "newest", category: "posts" }),
+          api.home.stats(),
         ]);
         if (!cancelled) {
           setState({
             loading: false,
             error: null,
             data: {
-              announcements: announcements.data || [],
-              activities: activities.data || [],
-              trivia: trivia.data,
-              schedules: schedules.data || [],
+              feed: feed.data || [],
+              stats: stats.data || null,
             },
           });
         }
@@ -118,19 +112,21 @@ export default function Home() {
   return (
     <div>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-seal-hero text-white">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
+      <section className="relative overflow-hidden bg-seal-hero text-center text-white">
+        <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 sm:py-20">
           <p className="text-sm font-medium uppercase tracking-widest text-forest-100">
-            Official Legislative Information Portal
+            Sangguniang Bayan ng Balilihan, Bohol
           </p>
-          <h1 className="mt-3 max-w-2xl font-display text-4xl font-semibold sm:text-5xl">
-            Sangguniang Bayan ng Balilihan
+          <h1 className="mx-auto mt-3 max-w-2xl font-display text-4xl font-extrabold leading-tight sm:text-5xl">
+            Know Your <span className="text-amber-300">Laws.</span>
+            <br />
+            Shape Your <span className="text-amber-300">Town.</span>
           </h1>
-          <p className="mt-4 max-w-xl text-forest-50/90">
+          <p className="mx-auto mt-4 max-w-xl text-forest-50/90">
             Browse officially published ordinances, resolutions, session minutes, and councilor
             records for the Municipality of Balilihan, Bohol.
           </p>
-          <div className="mt-7 flex flex-wrap gap-3">
+          <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Link to="/legislative/ordinances" className="btn-primary bg-white text-forest-700 hover:bg-forest-50">
               <ScrollText className="h-4 w-4" /> Browse Ordinances
             </Link>
@@ -141,103 +137,94 @@ export default function Home() {
               <Gavel className="h-4 w-4" /> Browse Resolutions
             </Link>
           </div>
+
+          <div className="mx-auto mt-10 flex max-w-md justify-center gap-8 sm:gap-14">
+            <div>
+              <p className="font-display text-3xl font-extrabold sm:text-4xl">
+                {state.data?.stats ? state.data.stats.ordinances : "—"}
+              </p>
+              <p className="mt-1 text-xs text-forest-100 sm:text-sm">Ordinances</p>
+            </div>
+            <div>
+              <p className="font-display text-3xl font-extrabold sm:text-4xl">
+                {state.data?.stats ? state.data.stats.resolutions : "—"}
+              </p>
+              <p className="mt-1 text-xs text-forest-100 sm:text-sm">Resolutions</p>
+            </div>
+            <div>
+              <p className="font-display text-3xl font-extrabold sm:text-4xl">
+                {state.data?.stats ? state.data.stats.sessionMinutes : "—"}
+              </p>
+              <p className="mt-1 text-xs text-forest-100 sm:text-sm">Session Minutes</p>
+            </div>
+          </div>
         </div>
       </section>
 
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-        {state.loading && <Loading label="Loading the latest updates" />}
+      {/* Feature highlights */}
+      <section className="mx-auto max-w-6xl px-4 py-16 text-center sm:px-6">
+        <h2 className="font-display text-3xl font-extrabold text-ink sm:text-4xl">
+          Everything You Need to Stay <span className="text-forest-600">Informed</span>
+        </h2>
+        <p className="mx-auto mt-3 max-w-xl text-muted">
+          We bring the Sangguniang Bayan's legislative records into one accessible portal.
+        </p>
+
+        <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-3">
+          {FEATURES.map(({ icon: Icon, title, description }) => (
+            <div key={title} className="card p-6">
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+                <Icon className="h-6 w-6" />
+              </span>
+              <h3 className="mt-4 font-display font-semibold text-ink">{title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Featured Feed */}
+      <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-display text-3xl font-extrabold text-ink sm:text-4xl">
+              Latest from the <span className="text-forest-600">Feed</span>
+            </h2>
+            <p className="mt-2 text-muted">
+              Recent announcements and activities from the Sangguniang Bayan office.
+            </p>
+          </div>
+          <Link to="/feed" className="flex items-center gap-1 text-sm font-semibold text-forest-700 hover:underline">
+            View All Feed <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+
+        {state.loading && <Loading label="Loading the feed" />}
         {state.error && <ErrorState message={state.error} />}
 
-        {state.data && (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="space-y-6 lg:col-span-2">
-              {/* Trivia */}
-              {state.data.trivia && (
-                <div className="card overflow-hidden">
-                  <div className="flex items-center gap-2 bg-forest-600 px-5 py-3 text-white">
-                    <Lightbulb className="h-4 w-4" />
-                    <span className="font-medium">Did you know?</span>
-                  </div>
-                  <p className="px-5 py-4 text-sm leading-relaxed text-ink">
-                    {state.data.trivia.fact_text}
-                  </p>
-                </div>
-              )}
-
-              {/* Activities / Happenings */}
-              <div className="overflow-hidden rounded-2xl border border-forest-100/70 shadow-card">
-                <div className="flex items-center gap-2 bg-forest-600 px-5 py-3 text-white">
-                  <CalendarClock className="h-4 w-4" />
-                  <span className="font-medium">Events &amp; Activities</span>
-                </div>
-                <div className="bg-forest-50/50 p-3 sm:p-4">
-                  {state.data.activities.length === 0 ? (
-                    <EmptyState title="No activities posted right now" />
-                  ) : (
-                    <div className="space-y-3">
-                      {state.data.activities.map((a) => <ContentPostItem key={a.id} post={a} />)}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Announcements */}
-              <div className="overflow-hidden rounded-2xl border border-forest-100/70 shadow-card">
-                <div className="flex items-center gap-2 bg-harbor-700 px-5 py-3 text-white">
-                  <Megaphone className="h-4 w-4" />
-                  <span className="font-medium">Announcements</span>
-                </div>
-                <div className="bg-harbor-50/40 p-3 sm:p-4">
-                  {state.data.announcements.length === 0 ? (
-                    <EmptyState title="No announcements posted right now" />
-                  ) : (
-                    <div className="space-y-3">
-                      {state.data.announcements.map((a) => <ContentPostItem key={a.id} post={a} />)}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Sidebar: Schedules + quick links */}
-            <div className="space-y-6">
-              <div className="card overflow-hidden">
-                <div className="flex items-center gap-2 bg-forest-900 px-5 py-3 text-white">
-                  <CalendarClock className="h-4 w-4" />
-                  <span className="font-medium">Public Schedule</span>
-                </div>
-                <div className="divide-y divide-forest-50">
-                  {state.data.schedules.length === 0 ? (
-                    <div className="p-5">
-                      <EmptyState title="No upcoming public events" />
-                    </div>
-                  ) : (
-                    state.data.schedules.map((ev) => (
-                      <div key={ev.id} className="px-5 py-3">
-                        <p className="text-sm font-medium text-ink">{ev.title}</p>
-                        <p className="text-xs text-muted">{formatEventDate(ev)}</p>
-                        {ev.location && <p className="text-xs text-muted">{ev.location}</p>}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              <div className="card p-5">
-                <h3 className="font-display font-semibold text-ink">Quick Access</h3>
-                <div className="mt-3 space-y-2 text-sm">
-                  <Link to="/legislative/session-minutes" className="flex items-center gap-2 text-forest-700 hover:underline">
-                    <BookOpen className="h-4 w-4" /> Session Minutes <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                  <Link to="/council/current" className="flex items-center gap-2 text-forest-700 hover:underline">
-                    <ScrollText className="h-4 w-4" /> Current Council <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                </div>
-              </div>
-            </div>
+        {state.data && state.data.feed.length === 0 && (
+          <div className="mt-8">
+            <EmptyState title="No posts yet" description="Check back soon for announcements and activities." />
           </div>
         )}
-      </div>
+
+        {state.data && state.data.feed.length > 0 && (
+          <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <FeaturedCard post={state.data.feed[0]} large />
+            {state.data.feed.length > 1 && (
+              <div className="flex flex-col gap-5">
+                <FeaturedCard post={state.data.feed[1]} />
+                {(state.data.feed[2] || state.data.feed[3]) && (
+                  <div className="grid grid-cols-2 gap-5">
+                    {state.data.feed[2] && <FeaturedCard post={state.data.feed[2]} />}
+                    {state.data.feed[3] && <FeaturedCard post={state.data.feed[3]} />}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

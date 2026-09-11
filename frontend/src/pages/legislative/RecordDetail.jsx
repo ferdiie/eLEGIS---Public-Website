@@ -23,6 +23,18 @@ function isImage(filetype) {
   return ["jpg", "jpeg", "png"].some((ext) => ft.includes(ext));
 }
 
+// Session agendas are stored as one flat string ("1. Call to Order 2. Roll
+// Call ..."), no newlines. Break it into one line per numbered item so it
+// reads as a list instead of a single run-on paragraph.
+function formatNumberedList(text) {
+  if (!text) return text;
+  const parts = text
+    .split(/(?=\d+\.\s)/g)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  return parts.length > 1 ? parts.join("\n") : text;
+}
+
 export default function RecordDetail() {
   const { type, id } = useParams();
   const [state, setState] = useState({ loading: true, error: null, data: null });
@@ -65,8 +77,8 @@ export default function RecordDetail() {
           {record.category && <span className="badge bg-gray-100 text-gray-600">{record.category}</span>}
         </div>
 
-        <h1 className="mt-3 font-display text-2xl font-semibold text-ink sm:text-3xl">
-          {record.title || record.agenda}
+        <h1 className="mt-3 whitespace-pre-line font-display text-2xl font-semibold text-ink sm:text-3xl">
+          {record.title || formatNumberedList(record.agenda)}
         </h1>
 
         <dl className="mt-5 grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">

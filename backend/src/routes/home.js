@@ -1,96 +1,105 @@
 import { Router } from "express";
 import { supabase } from "../lib/supabaseClient.js";
+import { parsePagination, sanitizeSearchTerm } from "../lib/helpers.js";
 
 export const homeRouter = Router();
 
-const MGMT_API_BASE_URL = (process.env.MGMT_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
+// content_posts (Announcements/Activities) is owned by the ThesisSystem admin
+// backend's Content Management module, in the same Supabase project. RLS
+// (see /db/002_content_posts_and_schedules_rls.sql) restricts the anon key
+// to published=true rows only.
+//
+// Note: sb_schedules (Public Schedule) is deliberately NOT exposed here —
+// schedules stay internal to the ThesisSystem only.
 
-// Announcements/activities and schedules are managed by the separate SB Office
-// system (SB_OFFICE_SYSTEM/my-backend). That backend locks the anon Supabase
-// key out of content_posts/sb_schedules and instead exposes its own
-// published-only public endpoints for this site to consume.
-async function fetchMgmtJson(path) {
-  const res = await fetch(`${MGMT_API_BASE_URL}${path}`);
-  if (!res.ok) {
-    throw new Error(`Management API request to ${path} failed (${res.status})`);
-  }
-  return res.json();
-}
-
-const mapContentPost = (p) => ({
-  id: p.id,
-  title: p.title,
-  body: p.body,
-  pinned: p.pinned,
-  images: p.images || [],
-  author: p.author ? { name: p.author.name, photo: p.author.photo } : null,
-  created_at: p.created_at,
-  updated_at: p.updated_at,
-});
-
-// FR-1: Display Public Announcements
-homeRouter.get("/announcements", async (req, res, next) => {
+// Feed — searchable/filterable browse of published content_posts
+// (Announcements + Activities) and active legislative_trivia facts, merged
+// into one feed for the /feed page. Both sources are small enough (a
+// municipal office's occasional posts, a handful of trivia facts) that
+// merging and paginating in application code is simpler than a SQL-level
+// UNION, and keeps each source's own filter logic (search, category)
+// straightforward.
+homeRouter.get("/feed", async (req, res, next) => {
   try {
-    const posts = await fetchMgmtJson("/api/content-posts/public");
-    const data = (posts || [])
-      .filter((p) => p.category === "announcement")
-      .slice(0, 20)
-      .map(mapContentPost);
-    res.json({ data });
+    const { page, pageSize } = parsePagination(req.query, { defaultPageSize: 9 });
+    const search = sanitizeSearchTerm(req.query.search || "");
+    const category = typeof req.query.category === "string" ? req.query.category.trim() : "all";
+    const sort = req.query.sort === "oldest" ? "oldest" : "newest";
+
+    const items = [];
+
+    // "posts" means announcements+activities but NOT trivia — used by the
+    // Home page's photo-first bento grid, which has no sensible tile for a
+    // text-only trivia fact. "all" (the /feed page's default) includes it.
+    if (["all", "posts", "announcement", "activity"].includes(category)) {
+      let query = supabase
+        .from("content_posts")
+        .select("id, title, body, category, pinned, images, created_at")
+        .eq("published", true);
+
+      if (category === "announcement" || category === "activity") query = query.eq("category", category);
+      if (search) query = query.or(`title.ilike.%${search}%,body.ilike.%${search}%`);
+
+      const { data, error } = await query;
+      if (error) throw error;
+      items.push(...(data || []));
+    }
+
+    if (category === "all" || category === "trivia") {
+      let query = supabase.from("legislative_trivia").select("id, fact_text, created_at").eq("is_active", true);
+      if (search) query = query.ilike("fact_text", `%${search}%`);
+
+      const { data, error } = await query;
+      if (error) throw error;
+      items.push(
+        ...(data || []).map((t) => ({
+          id: `trivia-${t.id}`,
+          title: "Did you know?",
+          body: t.fact_text,
+          category: "trivia",
+          pinned: false,
+          images: [],
+          created_at: t.created_at,
+        }))
+      );
+    }
+
+    items.sort((a, b) => {
+      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+      const diff = new Date(a.created_at) - new Date(b.created_at);
+      return sort === "oldest" ? diff : -diff;
+    });
+
+    const count = items.length;
+    const from = (page - 1) * pageSize;
+    const data = items.slice(from, from + pageSize);
+
+    res.json({ data, count, page, pageSize });
   } catch (err) {
     next(err);
   }
 });
 
-// FR-2: Display Activities / Happenings
-homeRouter.get("/activities", async (req, res, next) => {
+// Hero stat counters — live published-record counts for the home page.
+homeRouter.get("/stats", async (req, res, next) => {
   try {
-    const posts = await fetchMgmtJson("/api/content-posts/public");
-    const data = (posts || [])
-      .filter((p) => p.category === "activity")
-      .slice(0, 10)
-      .map(mapContentPost);
-    res.json({ data });
-  } catch (err) {
-    next(err);
-  }
-});
+    const [ordinances, resolutions, sessionMinutes] = await Promise.all([
+      supabase.from("ordinances").select("id", { count: "exact", head: true }).eq("status", "published"),
+      supabase.from("resolutions").select("id", { count: "exact", head: true }).eq("status", "published"),
+      supabase.from("session_minutes").select("id", { count: "exact", head: true }).eq("status", "published"),
+    ]);
 
-// FR-3: Display Legislative Trivia ("Did you know?")
-homeRouter.get("/trivia", async (req, res, next) => {
-  try {
-    const { data, error } = await supabase
-      .from("legislative_trivia")
-      .select("id, fact_text")
-      .eq("is_active", true);
+    if (ordinances.error) throw ordinances.error;
+    if (resolutions.error) throw resolutions.error;
+    if (sessionMinutes.error) throw sessionMinutes.error;
 
-    if (error) throw error;
-
-    // Serve one at random so repeat visitors see variety.
-    const pick = data && data.length ? data[Math.floor(Math.random() * data.length)] : null;
-    res.json({ data: pick });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// FR-4: Display Public Schedules
-homeRouter.get("/schedules", async (req, res, next) => {
-  try {
-    const today = new Date().toISOString().slice(0, 10);
-    const events = await fetchMgmtJson("/api/schedules");
-    const data = (events || [])
-      .filter((e) => e.event_date >= today)
-      .slice(0, 10)
-      .map((e) => ({
-        id: e.id,
-        title: e.title,
-        description: e.description,
-        location: e.location,
-        event_date: e.event_date,
-        event_time: e.event_time,
-      }));
-    res.json({ data });
+    res.json({
+      data: {
+        ordinances: ordinances.count || 0,
+        resolutions: resolutions.count || 0,
+        sessionMinutes: sessionMinutes.count || 0,
+      },
+    });
   } catch (err) {
     next(err);
   }

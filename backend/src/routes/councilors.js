@@ -28,9 +28,15 @@ councilorsRouter.get("/current", async (req, res, next) => {
 
     if (error) throw error;
 
+    // A term row whose council_member_id no longer matches any row in
+    // sb_council_members (an archived/deleted member) leaves
+    // sb_council_members null — drop those before mapping, not after,
+    // since spreading null still produces a truthy {} that would otherwise
+    // slip through as a nameless, id-less "member".
     const members = (data || [])
+      .filter((t) => t.sb_council_members)
       .map((t) => ({ ...t.sb_council_members, position: t.position, term_period: t.term_period, term_id: t.id }))
-      .filter((m) => m && matchesSearch(m, search))
+      .filter((m) => matchesSearch(m, search))
       .map((m) => ({ ...m, photo_url: m.photo || resolveFileUrl(m.photo_path) }));
 
     res.json({ data: members });

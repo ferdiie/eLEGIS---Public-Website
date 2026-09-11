@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
+import Feed from "./pages/Feed";
 import About from "./pages/About";
 import SearchResults from "./pages/SearchResults";
 import RecordList from "./pages/legislative/RecordList";
@@ -17,6 +18,7 @@ export default function App() {
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/feed" element={<Feed />} />
           <Route path="/about" element={<About />} />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/legislative/:type" element={<RecordList />} />

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
-import { ChevronDown, Search, Menu, X, Landmark } from "lucide-react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { ChevronDown, Search, Menu, X } from "lucide-react";
+import balilihanLogo from "../assets/balilihan-logo-Large-1.png";
 
 const legislativeLinks = [
   { to: "/legislative/ordinances", label: "Ordinances" },
@@ -29,8 +30,8 @@ function NavDropdown({ label, links, isActive }) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-          isActive ? "text-forest-700" : "text-gray-600 hover:text-forest-700"
+        className={`flex items-center gap-1 border-b-2 px-1 py-2 text-sm font-medium transition-colors ${
+          isActive ? "border-forest-600 text-forest-700" : "border-transparent text-gray-700 hover:text-forest-700"
         }`}
         aria-haspopup="true"
         aria-expanded={open}
@@ -65,6 +66,7 @@ export default function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
 
   function submitSearch(e) {
     e.preventDefault();
@@ -76,38 +78,51 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-forest-100 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <Link to="/" className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-forest-700 text-white">
-            <Landmark className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <span className="leading-tight">
-            <span className="block font-display text-base font-semibold text-forest-800">
-              Sangguniang Bayan
-            </span>
-            <span className="block text-xs text-muted">Balilihan, Bohol</span>
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-9 px-4 py-3 sm:px-6">
+        <Link to="/" className="flex items-center gap-2.5">
+          <img src={balilihanLogo} alt="Municipality of Balilihan seal" className="h-10 w-10 rounded-full object-cover" />
+          <span className="font-display text-lg font-bold text-forest-800">
+            eLEGIS<span className="font-semibold text-muted"> - Balilihan</span>
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
+        <nav className="ml-auto hidden items-center gap-9 md:flex" aria-label="Primary">
           <NavLink
             to="/"
             end
             className={({ isActive }) =>
-              `rounded-md px-3 py-2 text-sm font-medium ${
-                isActive ? "text-forest-700" : "text-gray-600 hover:text-forest-700"
+              `border-b-2 px-1 py-2 text-sm font-medium transition-colors ${
+                isActive ? "border-forest-600 text-forest-700" : "border-transparent text-gray-700 hover:text-forest-700"
               }`
             }
           >
             Home
           </NavLink>
-          <NavDropdown label="Legislative" links={legislativeLinks} />
-          <NavDropdown label="Council" links={councilLinks} />
+          <NavLink
+            to="/feed"
+            className={({ isActive }) =>
+              `border-b-2 px-1 py-2 text-sm font-medium transition-colors ${
+                isActive ? "border-forest-600 text-forest-700" : "border-transparent text-gray-700 hover:text-forest-700"
+              }`
+            }
+          >
+            Feed
+          </NavLink>
+          <NavDropdown
+            label="Legislative"
+            links={legislativeLinks}
+            isActive={location.pathname.startsWith("/legislative")}
+          />
+          <NavDropdown
+            label="Council"
+            links={councilLinks}
+            isActive={location.pathname.startsWith("/council")}
+          />
           <NavLink
             to="/about"
             className={({ isActive }) =>
-              `rounded-md px-3 py-2 text-sm font-medium ${
-                isActive ? "text-forest-700" : "text-gray-600 hover:text-forest-700"
+              `border-b-2 px-1 py-2 text-sm font-medium transition-colors ${
+                isActive ? "border-forest-600 text-forest-700" : "border-transparent text-gray-700 hover:text-forest-700"
               }`
             }
           >
@@ -163,6 +178,7 @@ export default function Navbar() {
             />
           </form>
           <MobileLink to="/" label="Home" onClick={() => setMobileOpen(false)} end />
+          <MobileLink to="/feed" label="Feed" onClick={() => setMobileOpen(false)} />
           <p className="mt-3 px-1 text-xs font-semibold uppercase tracking-wide text-muted">Legislative</p>
           {legislativeLinks.map((l) => (
             <MobileLink key={l.to} to={l.to} label={l.label} onClick={() => setMobileOpen(false)} />

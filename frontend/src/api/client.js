@@ -19,10 +19,8 @@ async function request(path, params = {}) {
 
 export const api = {
   home: {
-    announcements: () => request("/home/announcements"),
-    activities: () => request("/home/activities"),
-    trivia: () => request("/home/trivia"),
-    schedules: () => request("/home/schedules"),
+    stats: () => request("/home/stats"),
+    feed: (params) => request("/home/feed", params),
   },
   legislative: {
     list: (type, params) => request(`/legislative/${type}`, params),

@@ -16,6 +16,7 @@ const RECORD_TYPES = {
   ordinances: {
     table: "ordinances",
     numberField: "ordinance_number",
+    titleField: "title",
     listFields:
       "id, ordinance_number, title, year, category, filename, filetype, filepath, uploaded_at, status",
     detailFields:
@@ -27,6 +28,7 @@ const RECORD_TYPES = {
   resolutions: {
     table: "resolutions",
     numberField: "resolution_number",
+    titleField: "title",
     listFields:
       "id, resolution_number, title, year, category, filename, filetype, filepath, uploaded_at, status",
     detailFields:
@@ -38,6 +40,7 @@ const RECORD_TYPES = {
   "session-minutes": {
     table: "session_minutes",
     numberField: "session_number",
+    titleField: "agenda",
     listFields:
       "id, session_number, session_date, session_type, venue, agenda, filename, filetype, status",
     detailFields:
@@ -152,7 +155,7 @@ legislativeRouter.get("/:type/:id", async (req, res, next) => {
     if (config.officialsTable) {
       const { data: links, error: linkErr } = await supabase
         .from(config.officialsTable)
-        .select(`official_id, sb_council_members ( id, full_name, position, photo_path )`)
+        .select(`official_id, sb_council_members ( id, full_name, photo_path )`)
         .eq(config.officialsFK, record.id);
       if (linkErr) throw linkErr;
       officials = (links || []).map((l) => l.sb_council_members).filter(Boolean);
@@ -178,7 +181,7 @@ legislativeRouter.get("/:type/:id/download", async (req, res, next) => {
 
     const { data: record, error } = await supabase
       .from(config.table)
-      .select("filepath, filename, status")
+      .select(`filepath, filename, status, ${config.numberField}, ${config.titleField}`)
       .eq("id", req.params.id)
       .eq("status", "published") // FR-21
       .single();
@@ -192,7 +195,17 @@ legislativeRouter.get("/:type/:id/download", async (req, res, next) => {
       return res.status(404).json({ error: "No document is attached to this record." });
     }
 
-    res.redirect(url);
+    // Supabase Storage's public object endpoint honors a `download` query
+    // param to set Content-Disposition's filename — used here so the saved
+    // file is named after the record's title instead of its random storage
+    // key (e.g. "1782918079786.pdf").
+    const ext = (record.filename || record.filepath).split(".").pop();
+    const baseName = record[config.titleField] || record[config.numberField] || "document";
+    const safeName = baseName.replace(/[\\/:*?"<>|]+/g, " ").trim().slice(0, 150) || "document";
+    const downloadName = `${safeName}.${ext}`;
+
+    const downloadUrl = `${url}${url.includes("?") ? "&" : "?"}download=${encodeURIComponent(downloadName)}`;
+    res.redirect(downloadUrl);
   } catch (err) {
     next(err);
   }

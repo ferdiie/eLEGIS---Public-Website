@@ -8,24 +8,34 @@ import Pagination from "../../components/Pagination";
 import Loading from "../../components/Loading";
 import { EmptyState, ErrorState } from "../../components/EmptyState";
 
+// Sector/category values match the fixed lists the thesis system's admin
+// forms let staff pick from when uploading an ordinance/resolution
+// (ThesisSystem/my-app/src/AdminDashboard/AdminContext.jsx), so the filter
+// here can only ever match a value a record could actually have.
+const ORDINANCE_CATEGORIES = ["Tax", "Education", "Agriculture", "Environment", "Public Works", "Health", "Infrastructure"];
+const RESOLUTION_CATEGORIES = ["Finance", "Health", "Infrastructure", "Education", "Environment", "Public Safety", "Agriculture"];
+
 const TYPE_META = {
   ordinances: {
     label: "Ordinances",
     icon: ScrollText,
     theme: "bg-seal-hero",
     description: "Municipal laws enacted by the Sangguniang Bayan of Balilihan.",
+    categories: ORDINANCE_CATEGORIES,
   },
   resolutions: {
     label: "Resolutions",
     icon: Gavel,
     theme: "bg-harbor-700",
     description: "Formal expressions of the Council's opinion, will, or internal procedure.",
+    categories: RESOLUTION_CATEGORIES,
   },
   "session-minutes": {
     label: "Session Minutes",
     icon: BookOpen,
     theme: "bg-forest-900",
     description: "Official records of proceedings from Sangguniang Bayan sessions.",
+    categories: [],
   },
 };
 
@@ -98,7 +108,7 @@ export default function RecordList() {
           onChange={setFilters}
           onReset={() => setFilters(EMPTY_FILTERS)}
           years={YEAR_OPTIONS}
-          categories={[]}
+          categories={meta.categories}
           showAuthor={type !== "session-minutes"}
         />
 

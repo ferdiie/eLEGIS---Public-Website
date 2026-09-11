@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Landmark, MapPin, Mail, Phone } from "lucide-react";
+import { MapPin, Mail, Phone } from "lucide-react";
+import balilihanLogo from "../assets/balilihan-logo-Large-1.png";
 
 const quickLinks = [
   { to: "/", label: "Home" },
@@ -20,10 +21,10 @@ export default function Footer() {
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div className="sm:col-span-2 lg:col-span-1">
             <Link to="/" className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-forest-700 text-white">
-                <Landmark className="h-4 w-4" aria-hidden="true" />
+              <img src={balilihanLogo} alt="Municipality of Balilihan seal" className="h-9 w-9 rounded-full object-cover" />
+              <span className="font-display font-bold text-forest-800">
+                eLEGIS<span className="font-semibold text-muted"> - Balilihan</span>
               </span>
-              <span className="font-display font-semibold text-forest-800">Sangguniang Bayan</span>
             </Link>
             <p className="mt-4 text-sm leading-relaxed text-muted">
               Official legislative information portal of the Sangguniang Bayan ng Balilihan, Bohol —

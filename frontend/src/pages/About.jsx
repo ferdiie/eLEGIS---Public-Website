@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ShieldCheck, Star, Landmark } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { api } from "../api/client";
 import Loading from "../components/Loading";
 import { ErrorState } from "../components/EmptyState";
@@ -19,55 +19,42 @@ export default function About() {
   }, []);
 
   return (
-    <div>
-      <section className="bg-seal-hero text-white">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
-          <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15">
-              <ShieldCheck className="h-5 w-5" />
-            </span>
-            <div>
-              <h1 className="font-display text-2xl font-semibold sm:text-3xl">About the Office</h1>
-              <p className="text-sm text-white/80">Sangguniang Bayan ng Balilihan, Bohol</p>
-            </div>
-          </div>
+    <div className="mx-auto max-w-4xl px-4 py-14 sm:px-6">
+      <div className="flex items-center gap-3">
+        <ShieldCheck className="h-8 w-8 text-forest-700" aria-hidden="true" />
+        <h1 className="font-display text-3xl font-bold text-ink sm:text-4xl">About Us</h1>
+      </div>
+
+      {state.loading && <Loading label="Loading office information" />}
+      {state.error && <ErrorState message={state.error} />}
+
+      {state.data && (
+        <div className="mt-8 space-y-5 leading-relaxed text-ink">
+          <p>{state.data.description}</p>
+          <p>{state.data.mission}</p>
+          <p>{state.data.vision}</p>
+          <p className="italic text-forest-700">&ldquo;{state.data.tagline}&rdquo;</p>
         </div>
-      </section>
+      )}
 
-      <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
-        {state.loading && <Loading label="Loading office information" />}
-        {state.error && <ErrorState message={state.error} />}
-        {state.data && (
-          <div className="space-y-6">
-            <div className="card p-6 sm:p-8">
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-forest-700 text-white">
-                  <Landmark className="h-5 w-5" />
-                </span>
-                <h2 className="font-display text-xl font-semibold text-ink">{state.data.office_name}</h2>
-              </div>
-              <p className="mt-4 leading-relaxed text-ink">{state.data.description}</p>
-              <p className="mt-4 font-display italic text-forest-700">&ldquo;{state.data.tagline}&rdquo;</p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              <div className="card border-forest-100 bg-forest-50/60 p-6">
-                <div className="flex items-center gap-2 text-forest-700">
-                  <Star className="h-4 w-4" />
-                  <h3 className="font-display font-semibold">Mission</h3>
-                </div>
-                <p className="mt-2 text-sm leading-relaxed text-ink">{state.data.mission}</p>
-              </div>
-              <div className="card border-harbor-700/20 bg-harbor-700/5 p-6">
-                <div className="flex items-center gap-2 text-harbor-700">
-                  <Landmark className="h-4 w-4" />
-                  <h3 className="font-display font-semibold">Vision</h3>
-                </div>
-                <p className="mt-2 text-sm leading-relaxed text-ink">{state.data.vision}</p>
-              </div>
-            </div>
-          </div>
-        )}
+      <div className="mt-8 space-y-5 leading-relaxed text-ink">
+        <p>
+          The name <strong>eLEGIS</strong> comes from <em>Legis</em>, the Latin root for "law," paired
+          with "e" for electronic — reflecting what the platform does: bringing the Sangguniang
+          Bayan's legislative work online, where it can be reached by anyone, anytime.
+        </p>
+        <p>
+          eLEGIS is the official digital portal for the legislative records of Balilihan, Bohol. It
+          gives residents direct access to published ordinances, resolutions, and session minutes,
+          along with information on the councilors behind them — without needing to visit the
+          municipal office in person just to check whether a law has been passed or a session has
+          taken place.
+        </p>
+        <p>
+          By making these records searchable and open to the public, eLEGIS supports transparency
+          and accountability in local governance, and helps residents stay informed about the
+          decisions that shape their community.
+        </p>
       </div>
     </div>
   );
