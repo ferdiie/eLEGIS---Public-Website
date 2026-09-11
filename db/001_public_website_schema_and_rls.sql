@@ -94,7 +94,7 @@ ALTER TABLE public.ordinances             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.resolutions            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.session_minutes        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ordinance_officials    ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.resolutions_officials  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.resolution_officials   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sb_council_members     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sb_council_member_terms ENABLE ROW LEVEL SECURITY;
 
@@ -139,13 +139,13 @@ CREATE POLICY public_read_ordinance_officials ON public.ordinance_officials
     )
   );
 
-DROP POLICY IF EXISTS public_read_resolutions_officials ON public.resolutions_officials;
-CREATE POLICY public_read_resolutions_officials ON public.resolutions_officials
+DROP POLICY IF EXISTS public_read_resolution_officials ON public.resolution_officials;
+CREATE POLICY public_read_resolution_officials ON public.resolution_officials
   FOR SELECT TO anon
   USING (
     EXISTS (
       SELECT 1 FROM public.resolutions r
-      WHERE r.id = resolutions_officials.resolution_id AND r.status = 'published'
+      WHERE r.id = resolution_officials.resolution_id AND r.status = 'published'
     )
   );
 
@@ -169,7 +169,7 @@ REVOKE INSERT, UPDATE, DELETE ON
   public.resolutions,
   public.session_minutes,
   public.ordinance_officials,
-  public.resolutions_officials,
+  public.resolution_officials,
   public.sb_council_members,
   public.sb_council_member_terms
 FROM anon;

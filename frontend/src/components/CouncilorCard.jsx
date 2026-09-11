@@ -5,7 +5,7 @@ export default function CouncilorCard({ member }) {
   return (
     <Link
       to={`/council/member/${member.id}`}
-      className="card group flex flex-col items-center gap-3 p-5 text-center transition-transform hover:-translate-y-0.5"
+      className="card card-interactive group flex flex-col items-center gap-3 p-5 text-center"
     >
       <span className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-forest-100 text-forest-600 ring-2 ring-forest-100 group-hover:ring-forest-300">
         {member.photo_url ? (

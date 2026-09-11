@@ -3,27 +3,40 @@ import { supabase } from "../lib/supabaseClient.js";
 
 export const homeRouter = Router();
 
-const PRIORITY_ORDER = { urgent: 0, high: 1, normal: 2, low: 3 };
+const MGMT_API_BASE_URL = (process.env.MGMT_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
+
+// Announcements/activities and schedules are managed by the separate SB Office
+// system (SB_OFFICE_SYSTEM/my-backend). That backend locks the anon Supabase
+// key out of content_posts/sb_schedules and instead exposes its own
+// published-only public endpoints for this site to consume.
+async function fetchMgmtJson(path) {
+  const res = await fetch(`${MGMT_API_BASE_URL}${path}`);
+  if (!res.ok) {
+    throw new Error(`Management API request to ${path} failed (${res.status})`);
+  }
+  return res.json();
+}
+
+const mapContentPost = (p) => ({
+  id: p.id,
+  title: p.title,
+  body: p.body,
+  pinned: p.pinned,
+  images: p.images || [],
+  author: p.author ? { name: p.author.name, photo: p.author.photo } : null,
+  created_at: p.created_at,
+  updated_at: p.updated_at,
+});
 
 // FR-1: Display Public Announcements
 homeRouter.get("/announcements", async (req, res, next) => {
   try {
-    const today = new Date().toISOString().slice(0, 10);
-    const { data, error } = await supabase
-      .from("announcements")
-      .select("id, title, body, priority, expires_at, created_at")
-      .eq("is_public", true)
-      .eq("category", "announcement")
-      .or(`expires_at.is.null,expires_at.gte.${today}`)
-      .order("created_at", { ascending: false })
-      .limit(20);
-
-    if (error) throw error;
-
-    const sorted = [...(data || [])].sort(
-      (a, b) => (PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9)
-    );
-    res.json({ data: sorted });
+    const posts = await fetchMgmtJson("/api/content-posts/public");
+    const data = (posts || [])
+      .filter((p) => p.category === "announcement")
+      .slice(0, 20)
+      .map(mapContentPost);
+    res.json({ data });
   } catch (err) {
     next(err);
   }
@@ -32,17 +45,11 @@ homeRouter.get("/announcements", async (req, res, next) => {
 // FR-2: Display Activities / Happenings
 homeRouter.get("/activities", async (req, res, next) => {
   try {
-    const today = new Date().toISOString().slice(0, 10);
-    const { data, error } = await supabase
-      .from("announcements")
-      .select("id, title, body, priority, expires_at, created_at")
-      .eq("is_public", true)
-      .eq("category", "activity")
-      .or(`expires_at.is.null,expires_at.gte.${today}`)
-      .order("created_at", { ascending: false })
-      .limit(10);
-
-    if (error) throw error;
+    const posts = await fetchMgmtJson("/api/content-posts/public");
+    const data = (posts || [])
+      .filter((p) => p.category === "activity")
+      .slice(0, 10)
+      .map(mapContentPost);
     res.json({ data });
   } catch (err) {
     next(err);
@@ -71,18 +78,18 @@ homeRouter.get("/trivia", async (req, res, next) => {
 homeRouter.get("/schedules", async (req, res, next) => {
   try {
     const today = new Date().toISOString().slice(0, 10);
-    const { data, error } = await supabase
-      .from("calendar_events")
-      .select(
-        "id, title, description, location, start_date, start_time, end_date, end_time, all_day, color"
-      )
-      .eq("is_public", true)
-      .eq("is_admin_event", false)
-      .gte("start_date", today)
-      .order("start_date", { ascending: true })
-      .limit(10);
-
-    if (error) throw error;
+    const events = await fetchMgmtJson("/api/schedules");
+    const data = (events || [])
+      .filter((e) => e.event_date >= today)
+      .slice(0, 10)
+      .map((e) => ({
+        id: e.id,
+        title: e.title,
+        description: e.description,
+        location: e.location,
+        event_date: e.event_date,
+        event_time: e.event_time,
+      }));
     res.json({ data });
   } catch (err) {
     next(err);

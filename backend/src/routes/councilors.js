@@ -21,17 +21,17 @@ councilorsRouter.get("/current", async (req, res, next) => {
     const { data, error } = await supabase
       .from("sb_council_member_terms")
       .select(
-        `id, term_period, term_start, term_end, status, is_reelected, council_member_id,
-         sb_council_members ( id, full_name, position, photo, photo_path )`
+        `id, term_period, term_start, term_end, status, is_reelected, position, council_member_id,
+         sb_council_members ( id, full_name, photo, photo_path )`
       )
       .eq("status", "active");
 
     if (error) throw error;
 
     const members = (data || [])
-      .map((t) => ({ ...t.sb_council_members, term_period: t.term_period, term_id: t.id }))
+      .map((t) => ({ ...t.sb_council_members, position: t.position, term_period: t.term_period, term_id: t.id }))
       .filter((m) => m && matchesSearch(m, search))
-      .map((m) => ({ ...m, photo_url: resolveFileUrl(m.photo_path) || m.photo }));
+      .map((m) => ({ ...m, photo_url: m.photo || resolveFileUrl(m.photo_path) }));
 
     res.json({ data: members });
   } catch (err) {
@@ -47,8 +47,8 @@ councilorsRouter.get("/previous", async (req, res, next) => {
     const { data, error } = await supabase
       .from("sb_council_member_terms")
       .select(
-        `id, term_period, term_start, term_end, status, is_reelected, council_member_id,
-         sb_council_members ( id, full_name, position, photo, photo_path )`
+        `id, term_period, term_start, term_end, status, is_reelected, position, council_member_id,
+         sb_council_members ( id, full_name, photo, photo_path )`
       )
       .neq("status", "active")
       .order("term_start", { ascending: false });
@@ -58,12 +58,13 @@ councilorsRouter.get("/previous", async (req, res, next) => {
     const groups = new Map();
     for (const t of data || []) {
       const member = t.sb_council_members;
-      if (!member || !matchesSearch(member, search)) continue;
+      const enriched = member && { ...member, position: t.position };
+      if (!enriched || !matchesSearch(enriched, search)) continue;
       const key = t.term_period || "Unspecified Term";
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push({
-        ...member,
-        photo_url: resolveFileUrl(member.photo_path) || member.photo,
+        ...enriched,
+        photo_url: enriched.photo || resolveFileUrl(enriched.photo_path),
         is_reelected: t.is_reelected,
         term_start: t.term_start,
         term_end: t.term_end,
@@ -88,7 +89,7 @@ councilorsRouter.get("/:id", async (req, res, next) => {
 
     const { data: member, error: memberErr } = await supabase
       .from("sb_council_members")
-      .select("id, full_name, position, photo, photo_path")
+      .select("id, full_name, photo, photo_path")
       .eq("id", id)
       .single();
 
@@ -98,10 +99,15 @@ councilorsRouter.get("/:id", async (req, res, next) => {
 
     const { data: terms, error: termsErr } = await supabase
       .from("sb_council_member_terms")
-      .select("id, term_period, term_start, term_end, status, is_reelected")
+      .select("id, term_period, term_start, term_end, status, is_reelected, position")
       .eq("council_member_id", id)
       .order("term_start", { ascending: false });
     if (termsErr) throw termsErr;
+
+    // position is a per-term attribute (see the management system's
+    // 002_add_council_id_and_position_to_terms.sql) — use the active term's,
+    // falling back to the most recent term.
+    const activeTerm = (terms || []).find((t) => t.status === "active") || (terms || [])[0] || null;
 
     const { data: ordinanceLinks, error: ordErr } = await supabase
       .from("ordinance_officials")
@@ -110,7 +116,7 @@ councilorsRouter.get("/:id", async (req, res, next) => {
     if (ordErr) throw ordErr;
 
     const { data: resolutionLinks, error: resErr } = await supabase
-      .from("resolutions_officials")
+      .from("resolution_officials")
       .select("resolutions ( id, resolution_number, title, year, status )")
       .eq("official_id", id);
     if (resErr) throw resErr;
@@ -125,7 +131,8 @@ councilorsRouter.get("/:id", async (req, res, next) => {
     res.json({
       data: {
         ...member,
-        photo_url: resolveFileUrl(member.photo_path) || member.photo,
+        position: activeTerm?.position || null,
+        photo_url: member.photo || resolveFileUrl(member.photo_path),
         terms,
         authored_ordinances: ordinances,
         authored_resolutions: resolutions,

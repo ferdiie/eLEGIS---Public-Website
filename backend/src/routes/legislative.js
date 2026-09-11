@@ -31,7 +31,7 @@ const RECORD_TYPES = {
       "id, resolution_number, title, year, category, filename, filetype, filepath, uploaded_at, status",
     detailFields:
       "id, resolution_number, title, year, category, filename, filetype, filepath, uploaded_at, extracted_text, status",
-    officialsTable: "resolutions_officials",
+    officialsTable: "resolution_officials",
     officialsFK: "resolution_id",
     dateField: "uploaded_at",
   },

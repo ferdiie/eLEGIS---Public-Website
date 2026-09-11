@@ -20,7 +20,7 @@ export default function RecordCard({ type, record }) {
       : null;
 
   return (
-    <div className="card flex items-start gap-4 p-5">
+    <div className="card card-interactive flex items-start gap-4 p-5">
       <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-forest-50 text-forest-600">
         <Icon className="h-5 w-5" aria-hidden="true" />
       </span>

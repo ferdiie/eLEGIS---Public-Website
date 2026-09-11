@@ -13,7 +13,7 @@
     @apply font-display;
   }
   :focus-visible {
-    outline: 2px solid #1E7A34;
+    outline: 2px solid #472A9E;
     outline-offset: 2px;
   }
 }
@@ -26,18 +26,25 @@
     @apply bg-forest-100 text-forest-800;
   }
   .record-number {
-    @apply font-mono text-xs tracking-wide text-forest-700 bg-forest-50 px-2 py-0.5 rounded;
+    @apply font-mono text-xs tracking-wide text-forest-700 bg-forest-50 px-2 py-0.5 rounded-md;
   }
   .card {
     @apply bg-white rounded-2xl shadow-card border border-forest-100/70;
   }
+  /* Applied alongside .card on clickable cards for a subtle lift affordance. */
+  .card-interactive {
+    @apply transition-all duration-200 hover:-translate-y-0.5 hover:border-forest-200;
+  }
+  .card-interactive:hover {
+    box-shadow: 0 4px 10px rgba(9,4,70,0.10), 0 16px 32px rgba(9,4,70,0.14);
+  }
   .btn-primary {
-    @apply inline-flex items-center gap-2 rounded-lg bg-forest-600 px-4 py-2 text-sm font-medium text-white hover:bg-forest-700 transition-colors;
+    @apply inline-flex items-center gap-2 rounded-xl bg-forest-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-forest-700;
   }
   .btn-secondary {
-    @apply inline-flex items-center gap-2 rounded-lg border border-forest-200 bg-white px-4 py-2 text-sm font-medium text-forest-700 hover:bg-forest-50 transition-colors;
+    @apply inline-flex items-center gap-2 rounded-xl border border-forest-200 bg-white px-4 py-2.5 text-sm font-semibold text-forest-700 transition-colors hover:bg-forest-50;
   }
   .input {
-    @apply w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-ink placeholder:text-gray-400 focus:border-forest-400 focus:ring-1 focus:ring-forest-400 outline-none;
+    @apply w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-gray-400 outline-none focus:border-forest-400 focus:ring-1 focus:ring-forest-400;
   }
 }

@@ -5,19 +5,79 @@ import { api } from "../api/client";
 import Loading from "../components/Loading";
 import { EmptyState, ErrorState } from "../components/EmptyState";
 
-const PRIORITY_STYLE = {
-  urgent: "bg-red-50 text-red-700",
-  high: "bg-amber-50 text-amber-700",
-  normal: "bg-forest-50 text-forest-700",
-  low: "bg-gray-100 text-gray-600",
-};
-
 function formatEventDate(ev) {
-  if (!ev.start_date) return "";
-  const date = new Date(`${ev.start_date}T00:00:00`);
+  if (!ev.event_date) return "";
+  const date = new Date(`${ev.event_date}T00:00:00`);
   const label = date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-  if (ev.all_day) return label;
-  return ev.start_time ? `${label} · ${ev.start_time.slice(0, 5)}` : label;
+  return ev.event_time ? `${label} · ${ev.event_time.slice(0, 5)}` : label;
+}
+
+function formatPostDate(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function Avatar({ author }) {
+  if (author?.photo) {
+    return <img src={author.photo} alt="" className="h-6 w-6 flex-shrink-0 rounded-full object-cover" />;
+  }
+  const initial = author?.name?.trim()?.[0]?.toUpperCase() || "?";
+  return (
+    <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-forest-100 text-[11px] font-semibold text-forest-700">
+      {initial}
+    </span>
+  );
+}
+
+// Shared feed card for a content_posts row (used by both Announcements and
+// Activities — same underlying table/shape, just filtered by category).
+function ContentPostItem({ post }) {
+  const images = post.images || [];
+  const [cover, ...rest] = images;
+  const extra = rest.slice(0, 3);
+  const overflow = images.length - 1 - extra.length;
+
+  return (
+    <article className="card card-interactive overflow-hidden">
+      {cover && (
+        <div className="relative aspect-[16/9] w-full overflow-hidden bg-forest-50">
+          <img src={cover.url} alt="" className="h-full w-full object-cover" loading="lazy" />
+          {post.pinned && (
+            <span className="absolute left-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
+              Pinned
+            </span>
+          )}
+        </div>
+      )}
+      <div className="p-5">
+        <div className="flex items-center gap-2">
+          {!cover && post.pinned && <span className="badge bg-amber-50 text-amber-700">Pinned</span>}
+          <h3 className="font-semibold text-ink">{post.title}</h3>
+        </div>
+        <div className="mt-2 flex items-center gap-2 text-xs text-muted">
+          <Avatar author={post.author} />
+          {post.author?.name && <span>{post.author.name}</span>}
+          {post.author?.name && post.created_at && <span aria-hidden="true">·</span>}
+          <span>{formatPostDate(post.created_at)}</span>
+        </div>
+        <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm leading-relaxed text-muted">{post.body}</p>
+        {extra.length > 0 && (
+          <div className="mt-3 flex gap-2">
+            {extra.map((img, i) => (
+              <div key={img.path || i} className="relative h-14 w-14 overflow-hidden rounded-lg border border-forest-100">
+                <img src={img.url} alt="" className="h-full w-full object-cover" loading="lazy" />
+                {i === extra.length - 1 && overflow > 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-xs font-medium text-white">
+                    +{overflow}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </article>
+  );
 }
 
 export default function Home() {
@@ -105,50 +165,35 @@ export default function Home() {
               )}
 
               {/* Activities / Happenings */}
-              <div className="card overflow-hidden">
+              <div className="overflow-hidden rounded-2xl border border-forest-100/70 shadow-card">
                 <div className="flex items-center gap-2 bg-forest-600 px-5 py-3 text-white">
                   <CalendarClock className="h-4 w-4" />
-                  <span className="font-medium">Upcoming Events &amp; Activities</span>
+                  <span className="font-medium">Events &amp; Activities</span>
                 </div>
-                <div className="divide-y divide-forest-50">
+                <div className="bg-forest-50/50 p-3 sm:p-4">
                   {state.data.activities.length === 0 ? (
-                    <div className="p-5">
-                      <EmptyState title="No activities posted right now" />
-                    </div>
+                    <EmptyState title="No activities posted right now" />
                   ) : (
-                    state.data.activities.map((a) => (
-                      <div key={a.id} className="px-5 py-4">
-                        <h3 className="font-semibold text-ink">{a.title}</h3>
-                        <p className="mt-1 whitespace-pre-line text-sm text-muted">{a.body}</p>
-                      </div>
-                    ))
+                    <div className="space-y-3">
+                      {state.data.activities.map((a) => <ContentPostItem key={a.id} post={a} />)}
+                    </div>
                   )}
                 </div>
               </div>
 
               {/* Announcements */}
-              <div className="card overflow-hidden">
+              <div className="overflow-hidden rounded-2xl border border-forest-100/70 shadow-card">
                 <div className="flex items-center gap-2 bg-harbor-700 px-5 py-3 text-white">
                   <Megaphone className="h-4 w-4" />
                   <span className="font-medium">Announcements</span>
                 </div>
-                <div className="divide-y divide-forest-50">
+                <div className="bg-harbor-50/40 p-3 sm:p-4">
                   {state.data.announcements.length === 0 ? (
-                    <div className="p-5">
-                      <EmptyState title="No announcements posted right now" />
-                    </div>
+                    <EmptyState title="No announcements posted right now" />
                   ) : (
-                    state.data.announcements.map((a) => (
-                      <div key={a.id} className="px-5 py-4">
-                        <div className="flex items-center gap-2">
-                          <span className={`badge ${PRIORITY_STYLE[a.priority] || PRIORITY_STYLE.normal}`}>
-                            {a.priority}
-                          </span>
-                          <h3 className="font-semibold text-ink">{a.title}</h3>
-                        </div>
-                        <p className="mt-1 whitespace-pre-line text-sm text-muted">{a.body}</p>
-                      </div>
-                    ))
+                    <div className="space-y-3">
+                      {state.data.announcements.map((a) => <ContentPostItem key={a.id} post={a} />)}
+                    </div>
                   )}
                 </div>
               </div>
