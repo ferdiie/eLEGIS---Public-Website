@@ -114,7 +114,7 @@ export default function Home() {
       {/* Hero */}
       <section className="relative overflow-hidden bg-seal-hero text-center text-white">
         <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 sm:py-20">
-          <p className="text-sm font-medium uppercase tracking-widest text-forest-100">
+          <p className="whitespace-nowrap text-[11px] font-medium uppercase tracking-wide text-forest-100 sm:text-sm sm:tracking-widest">
             Sangguniang Bayan ng Balilihan, Bohol
           </p>
           <h1 className="mx-auto mt-3 max-w-2xl font-display text-4xl font-extrabold leading-tight sm:text-5xl">

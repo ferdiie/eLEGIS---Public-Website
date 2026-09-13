@@ -163,15 +163,15 @@ export default function Feed() {
 
   return (
     <div>
-      <section className="bg-seal-hero text-white">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+      <section className="border-b border-forest-100 bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 md:py-12">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15">
+            <span className="hidden h-11 w-11 items-center justify-center rounded-xl bg-forest-50 text-forest-600 md:flex">
               <Newspaper className="h-5 w-5" aria-hidden="true" />
             </span>
             <div>
-              <h1 className="font-display text-2xl font-semibold sm:text-3xl">Feed</h1>
-              <p className="text-sm text-white/80">
+              <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">Feed</h1>
+              <p className="text-sm text-muted">
                 Announcements and activities from the Sangguniang Bayan office.
               </p>
             </div>

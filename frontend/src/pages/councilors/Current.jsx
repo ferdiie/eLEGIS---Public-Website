@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Landmark, Search } from "lucide-react";
 import { api } from "../../api/client";
 import CouncilorCard from "../../components/CouncilorCard";
+import MobileSubTabs from "../../components/MobileSubTabs";
 import Loading from "../../components/Loading";
 import { EmptyState, ErrorState } from "../../components/EmptyState";
 
@@ -26,15 +27,22 @@ export default function CurrentCouncil() {
 
   return (
     <div>
-      <section className="bg-seal-hero text-white">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+      <MobileSubTabs
+        tabs={[
+          { to: "/council/current", label: "Current Council" },
+          { to: "/council/previous", label: "Previous Councils" },
+        ]}
+      />
+
+      <section className="border-b border-forest-100 bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 md:py-12">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15">
+            <span className="hidden h-11 w-11 items-center justify-center rounded-xl bg-forest-50 text-forest-600 md:flex">
               <Landmark className="h-5 w-5" />
             </span>
             <div>
-              <h1 className="font-display text-2xl font-semibold sm:text-3xl">Current Council</h1>
-              <p className="text-sm text-white/80">{state.data.length} active member{state.data.length === 1 ? "" : "s"}</p>
+              <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">Current Council</h1>
+              <p className="text-sm text-muted">{state.data.length} active member{state.data.length === 1 ? "" : "s"}</p>
             </div>
           </div>
         </div>

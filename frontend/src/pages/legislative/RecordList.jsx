@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { ScrollText, Gavel, BookOpen } from "lucide-react";
 import { api } from "../../api/client";
 import SearchFilterBar from "../../components/SearchFilterBar";
+import MobileSubTabs from "../../components/MobileSubTabs";
 import RecordCard from "../../components/RecordCard";
 import Pagination from "../../components/Pagination";
 import Loading from "../../components/Loading";
@@ -19,21 +20,21 @@ const TYPE_META = {
   ordinances: {
     label: "Ordinances",
     icon: ScrollText,
-    theme: "bg-seal-hero",
+    badgeColor: "bg-forest-50 text-forest-600",
     description: "Municipal laws enacted by the Sangguniang Bayan of Balilihan.",
     categories: ORDINANCE_CATEGORIES,
   },
   resolutions: {
     label: "Resolutions",
     icon: Gavel,
-    theme: "bg-harbor-700",
+    badgeColor: "bg-harbor-50 text-harbor-700",
     description: "Formal expressions of the Council's opinion, will, or internal procedure.",
     categories: RESOLUTION_CATEGORIES,
   },
   "session-minutes": {
     label: "Session Minutes",
     icon: BookOpen,
-    theme: "bg-forest-900",
+    badgeColor: "bg-forest-100 text-forest-900",
     description: "Official records of proceedings from Sangguniang Bayan sessions.",
     categories: [],
   },
@@ -88,15 +89,23 @@ export default function RecordList() {
 
   return (
     <div>
-      <section className={`${meta.theme} text-white`}>
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+      <MobileSubTabs
+        tabs={[
+          { to: "/legislative/ordinances", label: "Ordinances" },
+          { to: "/legislative/resolutions", label: "Resolutions" },
+          { to: "/legislative/session-minutes", label: "Session Minutes" },
+        ]}
+      />
+
+      <section className="border-b border-forest-100 bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 md:py-10">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15">
+            <span className={`hidden h-11 w-11 items-center justify-center rounded-xl md:flex ${meta.badgeColor}`}>
               <Icon className="h-5 w-5" aria-hidden="true" />
             </span>
             <div>
-              <h1 className="font-display text-2xl font-semibold sm:text-3xl">{meta.label}</h1>
-              <p className="text-sm text-white/80">{meta.description}</p>
+              <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">{meta.label}</h1>
+              <p className="text-sm text-muted">{meta.description}</p>
             </div>
           </div>
         </div>

@@ -15,7 +15,7 @@ export default function SearchFilterBar({
   return (
     <div className="card p-4 sm:p-5">
       <div className="flex items-center gap-2 text-sm font-medium text-forest-700">
-        <Search className="h-4 w-4" />
+        <Search className="h-4 w-4 flex-shrink-0" />
         <input
           value={filters.search}
           onChange={(e) => set("search", e.target.value)}
@@ -25,16 +25,16 @@ export default function SearchFilterBar({
         />
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <span className="flex items-center gap-1 text-xs font-medium text-muted">
-          <SlidersHorizontal className="h-3.5 w-3.5" /> Filter:
-        </span>
+      <div className="mt-4 flex items-center gap-1 text-xs font-medium text-muted">
+        <SlidersHorizontal className="h-3.5 w-3.5" /> Filter
+      </div>
 
+      <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {categories.length > 0 && (
           <select
             value={filters.category}
             onChange={(e) => set("category", e.target.value)}
-            className="input w-auto"
+            className="input"
             aria-label="Filter by category"
           >
             <option value="">All Categories</option>
@@ -50,7 +50,7 @@ export default function SearchFilterBar({
           <select
             value={filters.year}
             onChange={(e) => set("year", e.target.value)}
-            className="input w-auto"
+            className="input"
             aria-label="Filter by year"
           >
             <option value="">All Years</option>
@@ -66,7 +66,7 @@ export default function SearchFilterBar({
           type="date"
           value={filters.date}
           onChange={(e) => set("date", e.target.value)}
-          className="input w-auto"
+          className="input"
           aria-label="Filter by date"
         />
 
@@ -75,12 +75,14 @@ export default function SearchFilterBar({
             value={filters.author}
             onChange={(e) => set("author", e.target.value)}
             placeholder="Author / official…"
-            className="input w-auto"
+            className="input"
             aria-label="Filter by author"
           />
         )}
+      </div>
 
-        <button onClick={onReset} className="btn-secondary ml-auto">
+      <div className="mt-3 flex justify-end">
+        <button onClick={onReset} className="btn-secondary">
           <RotateCcw className="h-3.5 w-3.5" /> Reset
         </button>
       </div>

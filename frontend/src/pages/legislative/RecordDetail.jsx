@@ -11,16 +11,32 @@ const TYPE_LABEL = {
   "session-minutes": "Session Minutes",
 };
 
+function isWordDoc(filetype) {
+  if (!filetype) return false;
+  const ft = filetype.toLowerCase();
+  return ft.includes("msword") || ft.includes("wordprocessingml");
+}
+
 function isPreviewable(filetype) {
   if (!filetype) return false;
   const ft = filetype.toLowerCase();
-  return ["pdf", "jpg", "jpeg", "png"].some((ext) => ft.includes(ext));
+  return ["pdf", "jpg", "jpeg", "png"].some((ext) => ft.includes(ext)) || isWordDoc(filetype);
 }
 
 function isImage(filetype) {
   if (!filetype) return false;
   const ft = filetype.toLowerCase();
   return ["jpg", "jpeg", "png"].some((ext) => ft.includes(ext));
+}
+
+// Browsers can't render .doc/.docx inline, so route those through
+// Microsoft's Office Online viewer (works both as an iframe src and as a
+// standalone page you can open directly, which is what "Full Screen" does).
+function getPreviewUrl(fileUrl, filetype) {
+  if (isWordDoc(filetype)) {
+    return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
+  }
+  return fileUrl;
 }
 
 // Session agendas are stored as one flat string ("1. Call to Order 2. Roll
@@ -63,6 +79,7 @@ export default function RecordDetail() {
   const record = state.data;
   const number = record.ordinance_number || record.resolution_number || record.session_number;
   const downloadUrl = api.legislative.downloadUrl(type, id);
+  const previewUrl = record.file_url ? getPreviewUrl(record.file_url, record.filetype) : null;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
@@ -147,14 +164,14 @@ export default function RecordDetail() {
 
         {/* Document preview + download */}
         <div className="mt-8 border-t border-forest-100 pt-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm font-medium text-muted">Document</p>
             {record.file_url && (
               <div className="flex gap-2">
-                <a href={record.file_url} target="_blank" rel="noreferrer" className="btn-secondary">
+                <a href={previewUrl} target="_blank" rel="noreferrer" className="btn-secondary flex-1 justify-center sm:flex-none">
                   <Maximize2 className="h-4 w-4" /> Full Screen
                 </a>
-                <a href={downloadUrl} className="btn-primary">
+                <a href={downloadUrl} className="btn-primary flex-1 justify-center sm:flex-none">
                   <Download className="h-4 w-4" /> Download
                 </a>
               </div>
@@ -170,7 +187,7 @@ export default function RecordDetail() {
             {record.file_url && isPreviewable(record.filetype) && !isImage(record.filetype) && (
               <iframe
                 title={`Preview of ${record.title || number}`}
-                src={record.file_url}
+                src={previewUrl}
                 className="h-[600px] w-full rounded-lg border border-forest-100"
               />
             )}
