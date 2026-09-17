@@ -10,6 +10,7 @@ const CATEGORY_LABEL = {
   announcement: "Announcement",
   activity: "Activity",
   trivia: "Trivia",
+  schedule: "Schedule",
 };
 
 const PAGE_SIZE = 8;
@@ -206,6 +207,7 @@ export default function Feed() {
               <option value="announcement">Announcements</option>
               <option value="activity">Activities</option>
               <option value="trivia">Trivia</option>
+              <option value="schedule">Schedule</option>
             </select>
           </div>
           <div>

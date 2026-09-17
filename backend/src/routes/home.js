@@ -4,13 +4,13 @@ import { parsePagination, sanitizeSearchTerm } from "../lib/helpers.js";
 
 export const homeRouter = Router();
 
-// content_posts (Announcements/Activities) is owned by the ThesisSystem admin
-// backend's Content Management module, in the same Supabase project. RLS
-// (see /db/002_content_posts_and_schedules_rls.sql) restricts the anon key
-// to published=true rows only.
-//
-// Note: sb_schedules (Public Schedule) is deliberately NOT exposed here —
-// schedules stay internal to the ThesisSystem only.
+// content_posts (Announcements/Activities) and sb_schedules (Public
+// Schedule) are owned by the ThesisSystem admin backend's Content
+// Management module, in the same Supabase project. RLS restricts the anon
+// key to published=true rows only — see /db/002_content_posts_and_schedules_rls.sql
+// for content_posts, and /db/003_expose_sb_schedules_to_public.sql for
+// sb_schedules (which reverses that same file's earlier lockout, now that
+// schedules are shown in the public Feed).
 
 // Feed — searchable/filterable browse of published content_posts
 // (Announcements + Activities) and active legislative_trivia facts, merged
@@ -61,6 +61,40 @@ homeRouter.get("/feed", async (req, res, next) => {
           images: [],
           created_at: t.created_at,
         }))
+      );
+    }
+
+    if (category === "all" || category === "schedule") {
+      let query = supabase
+        .from("sb_schedules")
+        .select("id, title, description, location, event_date, event_time")
+        .eq("published", true);
+      if (search) query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+
+      const { data, error } = await query;
+      if (error) throw error;
+      items.push(
+        ...(data || []).map((s) => {
+          const dateLabel = new Date(`${s.event_date}T00:00:00`).toLocaleDateString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          });
+          const timeLabel = s.event_time ? ` · ${s.event_time.slice(0, 5)}` : "";
+          const lines = [`📅 ${dateLabel}${timeLabel}`];
+          if (s.location) lines.push(`📍 ${s.location}`);
+          if (s.description) lines.push("", s.description);
+
+          return {
+            id: `schedule-${s.id}`,
+            title: s.title,
+            body: lines.join("\n"),
+            category: "schedule",
+            pinned: false,
+            images: [],
+            created_at: s.event_date,
+          };
+        })
       );
     }
 
