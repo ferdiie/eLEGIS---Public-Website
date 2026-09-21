@@ -69,7 +69,11 @@ homeRouter.get("/feed", async (req, res, next) => {
         .from("sb_schedules")
         .select("id, title, description, location, event_date, event_time")
         .eq("published", true);
-      if (search) query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+      if (search) {
+        query = query.or(
+          `title.ilike.%${search}%,description.ilike.%${search}%,location.ilike.%${search}%`
+        );
+      }
 
       const { data, error } = await query;
       if (error) throw error;

@@ -5,6 +5,7 @@ import {
   sanitizeSearchTerm,
   parseYear,
   parseDate,
+  dayRange,
   resolveFileUrl,
 } from "../lib/helpers.js";
 
@@ -24,6 +25,10 @@ const RECORD_TYPES = {
     officialsTable: "ordinance_officials",
     officialsFK: "ordinance_id",
     dateField: "uploaded_at",
+    dateKind: "timestamp",
+    yearField: "year",
+    categoryField: "category",
+    searchFields: ["title", "ordinance_number", "category"],
   },
   resolutions: {
     table: "resolutions",
@@ -36,6 +41,10 @@ const RECORD_TYPES = {
     officialsTable: "resolution_officials",
     officialsFK: "resolution_id",
     dateField: "uploaded_at",
+    dateKind: "timestamp",
+    yearField: "year",
+    categoryField: "category",
+    searchFields: ["title", "resolution_number", "category"],
   },
   "session-minutes": {
     table: "session_minutes",
@@ -48,6 +57,12 @@ const RECORD_TYPES = {
     officialsTable: null,
     officialsFK: null,
     dateField: "session_date",
+    dateKind: "date",
+    // session_minutes has no `year` or `category` column — the year is
+    // derived from session_date, and there is no category to filter on.
+    yearField: null,
+    categoryField: null,
+    searchFields: ["agenda", "session_number", "venue"],
   },
 };
 
@@ -105,13 +120,22 @@ legislativeRouter.get("/:type", async (req, res, next) => {
       .eq("status", "published"); // FR-21: published-only, always applied
 
     if (search) {
-      query = query.or(
-        `title.ilike.%${search}%,${config.numberField}.ilike.%${search}%`
-      );
+      query = query.or(config.searchFields.map((f) => `${f}.ilike.%${search}%`).join(","));
     }
-    if (year) query = query.eq("year", year);
-    if (category && category.toLowerCase() !== "all") query = query.eq("category", category);
-    if (date) query = query.eq(config.dateField, date);
+    if (year) {
+      if (config.yearField) {
+        query = query.eq(config.yearField, year);
+      } else {
+        query = query.gte(config.dateField, `${year}-01-01`).lt(config.dateField, `${year + 1}-01-01`);
+      }
+    }
+    if (category && category.toLowerCase() !== "all" && config.categoryField) {
+      query = query.eq(config.categoryField, category);
+    }
+    if (date) {
+      const { start, end } = dayRange(date, config.dateKind);
+      query = query.gte(config.dateField, start).lt(config.dateField, end);
+    }
 
     if (author) {
       const ids = await resolveAuthorFilterIds(config, author);

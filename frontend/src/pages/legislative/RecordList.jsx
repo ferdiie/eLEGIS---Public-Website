@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { ScrollText, Gavel, BookOpen } from "lucide-react";
 import { api } from "../../api/client";
 import SearchFilterBar from "../../components/SearchFilterBar";
@@ -46,19 +46,31 @@ const YEAR_OPTIONS = Array.from({ length: 12 }, (_, i) => currentYear - i);
 
 const EMPTY_FILTERS = { search: "", year: "", category: "", date: "", author: "" };
 
+// Keyed by record type so switching between Ordinances / Resolutions / Session
+// Minutes starts from a clean slate — otherwise a category picked on one type
+// (e.g. "Tax") would carry over to a type that doesn't have it.
 export default function RecordList() {
   const { type } = useParams();
+  return <RecordListInner key={type} type={type} />;
+}
+
+function RecordListInner({ type }) {
   const meta = TYPE_META[type] || TYPE_META.ordinances;
   const Icon = meta.icon;
+  const [searchParams] = useSearchParams();
 
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  // `?search=` lets the global search page link into the full, paginated list.
+  const [filters, setFilters] = useState(() => ({
+    ...EMPTY_FILTERS,
+    search: searchParams.get("search") || "",
+  }));
   const [page, setPage] = useState(1);
   const [state, setState] = useState({ loading: true, error: null, data: [], count: 0 });
 
-  // Reset to page 1 whenever the record type or filters change.
+  // Reset to page 1 whenever the filters change.
   useEffect(() => {
     setPage(1);
-  }, [type, filters]);
+  }, [filters]);
 
   useEffect(() => {
     let cancelled = false;

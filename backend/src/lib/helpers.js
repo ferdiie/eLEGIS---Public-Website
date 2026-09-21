@@ -25,7 +25,8 @@ export function parsePagination(query, { defaultPageSize = 10, maxPageSize = 50 
 export function sanitizeSearchTerm(raw) {
   if (typeof raw !== "string") return "";
   return raw
-    .replace(/[%,*()]/g, "")
+    .replace(/[%,*()"\\]/g, "")
+    .replace(/\s+/g, " ")
     .trim()
     .slice(0, 100);
 }
@@ -42,6 +43,26 @@ export function parseDate(raw) {
   if (typeof raw !== "string") return null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
   return raw;
+}
+
+// The municipality is in the Philippines (UTC+8, no DST). A "date" filter on a
+// timestamptz column must mean that calendar day locally, not in UTC.
+const LOCAL_UTC_OFFSET = "+08:00";
+
+/**
+ * Turns a YYYY-MM-DD string into a [start, end) range for filtering a column
+ * to that whole day. `kind` is the column type: "date" columns compare against
+ * plain dates, "timestamp" columns against local-midnight instants.
+ */
+export function dayRange(isoDate, kind = "timestamp") {
+  const next = new Date(`${isoDate}T00:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  const nextDate = next.toISOString().slice(0, 10);
+  if (kind === "date") return { start: isoDate, end: nextDate };
+  return {
+    start: `${isoDate}T00:00:00${LOCAL_UTC_OFFSET}`,
+    end: `${nextDate}T00:00:00${LOCAL_UTC_OFFSET}`,
+  };
 }
 
 /**
