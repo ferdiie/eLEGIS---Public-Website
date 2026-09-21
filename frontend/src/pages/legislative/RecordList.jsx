@@ -44,7 +44,7 @@ const PAGE_SIZE = 8;
 const currentYear = new Date().getFullYear();
 const YEAR_OPTIONS = Array.from({ length: 12 }, (_, i) => currentYear - i);
 
-const EMPTY_FILTERS = { search: "", year: "", category: "", date: "", author: "" };
+const EMPTY_FILTERS = { search: "", year: "", category: "", date: "" };
 
 // Keyed by record type so switching between Ordinances / Resolutions / Session
 // Minutes starts from a clean slate — otherwise a category picked on one type
@@ -130,7 +130,6 @@ function RecordListInner({ type }) {
           onReset={() => setFilters(EMPTY_FILTERS)}
           years={YEAR_OPTIONS}
           categories={meta.categories}
-          showAuthor={type !== "session-minutes"}
         />
 
         <p className="text-sm text-muted">{showingLabel}</p>

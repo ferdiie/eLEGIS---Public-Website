@@ -53,7 +53,7 @@ export default function SearchResults() {
       {!state.loading && !state.error && totalResults === 0 && (
         <EmptyState
           title="No published records matched your search"
-          description="Try a different keyword, category, or record number."
+          description="Try a different keyword, record number, category, or author name."
         />
       )}
 

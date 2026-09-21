@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ScrollText, Gavel, ArrowRight, Landmark, Newspaper, Pin } from "lucide-react";
+import { ScrollText, ArrowRight, Landmark, Newspaper, Pin } from "lucide-react";
 import { api } from "../api/client";
 import Loading from "../components/Loading";
 import { EmptyState, ErrorState } from "../components/EmptyState";
@@ -9,12 +9,12 @@ const FEATURES = [
   {
     icon: ScrollText,
     title: "Published Ordinances",
-    description: "Browse enacted municipal laws, searchable by year, category, and author.",
+    description: "Browse enacted municipal laws, searchable by keyword, year, category, and author.",
   },
   {
-    icon: Gavel,
-    title: "Resolutions & Minutes",
-    description: "Access official resolutions and session minutes from every council meeting.",
+    icon: Newspaper,
+    title: "Feed",
+    description: "Stay updated with announcements, activities, and session schedules from the Sangguniang Bayan.",
   },
   {
     icon: Landmark,
@@ -128,13 +128,13 @@ export default function Home() {
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Link to="/legislative/ordinances" className="btn-primary bg-white text-forest-700 hover:bg-forest-50">
-              <ScrollText className="h-4 w-4" /> Browse Ordinances
+              <ScrollText className="h-4 w-4" /> Browse Legislative
             </Link>
             <Link
-              to="/legislative/resolutions"
+              to="/council/current"
               className="btn-secondary border-white/30 bg-white/10 text-white hover:bg-white/20"
             >
-              <Gavel className="h-4 w-4" /> Browse Resolutions
+              <Landmark className="h-4 w-4" /> Browse Council
             </Link>
           </div>
 

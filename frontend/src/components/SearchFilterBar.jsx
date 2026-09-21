@@ -6,7 +6,6 @@ export default function SearchFilterBar({
   onReset,
   years = [],
   categories = [],
-  showAuthor = true,
 }) {
   function set(field, value) {
     onChange({ ...filters, [field]: value });
@@ -19,7 +18,7 @@ export default function SearchFilterBar({
         <input
           value={filters.search}
           onChange={(e) => set("search", e.target.value)}
-          placeholder="Search by title, number, or keyword…"
+          placeholder="Search by title, number, author, or keyword…"
           className="input"
           aria-label="Search records"
         />
@@ -29,7 +28,7 @@ export default function SearchFilterBar({
         <SlidersHorizontal className="h-3.5 w-3.5" /> Filter
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
         {categories.length > 0 && (
           <select
             value={filters.category}
@@ -69,16 +68,6 @@ export default function SearchFilterBar({
           className="input"
           aria-label="Filter by date"
         />
-
-        {showAuthor && (
-          <input
-            value={filters.author}
-            onChange={(e) => set("author", e.target.value)}
-            placeholder="Author / official…"
-            className="input"
-            aria-label="Filter by author"
-          />
-        )}
       </div>
 
       <div className="mt-3 flex justify-end">

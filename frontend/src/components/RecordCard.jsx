@@ -19,6 +19,14 @@ export default function RecordCard({ type, record }) {
       ? String(record.year)
       : null;
 
+  // Show the first couple of authors, collapsing the rest into "+N".
+  const officials = record.officials || [];
+  const authors =
+    officials.length === 0
+      ? null
+      : officials.slice(0, 2).map((o) => o.full_name).join(", ") +
+        (officials.length > 2 ? ` +${officials.length - 2}` : "");
+
   return (
     <div className="card card-interactive flex items-start gap-4 p-5">
       <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-forest-50 text-forest-600">
@@ -35,6 +43,12 @@ export default function RecordCard({ type, record }) {
         <div className="mt-1 flex flex-wrap gap-x-3 text-sm text-muted">
           {record.session_date && <span>{record.session_date}</span>}
           {subtitle && <span>{subtitle}</span>}
+          {authors && (
+            <span className="min-w-0 truncate" title={officials.map((o) => o.full_name).join(", ")}>
+              {subtitle && <span aria-hidden="true">· </span>}
+              By {authors}
+            </span>
+          )}
         </div>
       </div>
       <Link

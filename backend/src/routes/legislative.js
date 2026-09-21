@@ -76,18 +76,18 @@ function getConfigOr404(req, res) {
 }
 
 /**
- * Resolves an `author` search term to a set of record ids by looking up
- * matching council members, then the join table linking them to records.
- * Returns `null` when there is no author filter to apply, or an array of
- * ids (possibly empty) when there is.
+ * Resolves a search term to the ids of records authored by a council member
+ * whose name matches it (council members, then the join table linking them
+ * to records). Returns an empty array when the record type has no authors
+ * or nobody matches.
  */
-async function resolveAuthorFilterIds(config, authorTerm) {
-  if (!authorTerm || !config.officialsTable) return null;
+async function resolveAuthorMatchIds(config, term) {
+  if (!term || !config.officialsTable) return [];
 
   const { data: members, error: memberErr } = await supabase
     .from("sb_council_members")
     .select("id")
-    .ilike("full_name", `%${authorTerm}%`);
+    .ilike("full_name", `%${term}%`);
   if (memberErr) throw memberErr;
   if (!members || members.length === 0) return [];
 
@@ -112,7 +112,6 @@ legislativeRouter.get("/:type", async (req, res, next) => {
     const year = parseYear(req.query.year);
     const category = typeof req.query.category === "string" ? req.query.category.trim() : "";
     const date = parseDate(req.query.date);
-    const author = sanitizeSearchTerm(req.query.author || "");
 
     let query = supabase
       .from(config.table)
@@ -120,7 +119,12 @@ legislativeRouter.get("/:type", async (req, res, next) => {
       .eq("status", "published"); // FR-21: published-only, always applied
 
     if (search) {
-      query = query.or(config.searchFields.map((f) => `${f}.ilike.%${search}%`).join(","));
+      // Match the record's own text fields, or any record authored by an
+      // official whose name matches (so "Asilo" finds his ordinances).
+      const conditions = config.searchFields.map((f) => `${f}.ilike.%${search}%`);
+      const authorIds = await resolveAuthorMatchIds(config, search);
+      if (authorIds.length > 0) conditions.push(`id.in.(${authorIds.join(",")})`);
+      query = query.or(conditions.join(","));
     }
     if (year) {
       if (config.yearField) {
@@ -137,22 +141,33 @@ legislativeRouter.get("/:type", async (req, res, next) => {
       query = query.gte(config.dateField, start).lt(config.dateField, end);
     }
 
-    if (author) {
-      const ids = await resolveAuthorFilterIds(config, author);
-      if (ids !== null) {
-        if (ids.length === 0) {
-          return res.json({ data: [], count: 0, page, pageSize });
-        }
-        query = query.in("id", ids);
-      }
-    }
-
     query = query.order(config.dateField, { ascending: false }).range(from, to);
 
     const { data, error, count } = await query;
     if (error) throw error;
 
-    res.json({ data, count, page, pageSize });
+    // Attach each record's authors/officials so list cards can show them.
+    // One batched lookup for the whole page rather than one per record.
+    let records = data;
+    if (config.officialsTable && data.length > 0) {
+      const { data: links, error: linkErr } = await supabase
+        .from(config.officialsTable)
+        .select(`${config.officialsFK}, sb_council_members ( id, full_name )`)
+        .in(config.officialsFK, data.map((r) => r.id));
+      if (linkErr) throw linkErr;
+
+      const byRecord = new Map();
+      for (const l of links || []) {
+        if (!l.sb_council_members) continue;
+        const key = l[config.officialsFK];
+        if (!byRecord.has(key)) byRecord.set(key, new Map());
+        // Keyed by member id: the link table can hold the same official twice.
+        byRecord.get(key).set(l.sb_council_members.id, l.sb_council_members);
+      }
+      records = data.map((r) => ({ ...r, officials: [...(byRecord.get(r.id)?.values() ?? [])] }));
+    }
+
+    res.json({ data: records, count, page, pageSize });
   } catch (err) {
     next(err);
   }
